@@ -337,21 +337,23 @@
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let awake = false;
-  let timeOffset = 0;         // ms offset from real time (for jumps)
-  let slowFactor = 1.0;       // 1 = normal, >1 = slower
-  let slowUntil = 0;
-  let glitchFreeze = false;
-  let glitchFreezeUntil = 0;
-  let frozenSecond = null;
-  let lastGlitchTime = Date.now();
-  let nextGlitchIn = randBetween(3000, 8000);
-  let msSimOffset = 0;
+
+  // Lag: how many ms the displayed clock trails real time. Always >= 0.
+  // While holding it grows; after release it drains slowly.
+  let lag = 0;
+  const HOLD_LAG_RATE   = 0.32;  // ms of extra lag per ms held (display ≈ 68% speed)
+  const RECOVER_RATE    = 0.04;  // ms of lag shed per ms at rest (slow drift back)
+
+  // Ambient glitch state: brief lag spikes with no jump
+  let glitchLagExtra    = 0;     // extra lag rate added by current glitch
+  let glitchUntil       = 0;
+  let lastGlitchTime    = Date.now();
+  let nextGlitchIn      = randBetween(3000, 8000);
+
   let lastRealMs = Date.now();
 
   // Hold state
   let holdStart = null;
-  let holdTimer = null;
-  let sweetSpot = 0;
   let holdActive = false;
 
   // User counters
@@ -431,43 +433,37 @@
 
   function tick(ts) {
     const realNow = Date.now();
-    const dt = realNow - lastRealMs;
+    const dt = Math.min(realNow - lastRealMs, 100); // clamp for tab-hidden recovery
     lastRealMs = realNow;
 
-    // ── Glitch scheduler ──
+    // ── Ambient glitch scheduler ──
     if (realNow - lastGlitchTime > nextGlitchIn && !holdActive) {
       triggerGlitch();
       lastGlitchTime = realNow;
       nextGlitchIn = randBetween(3000, 8000);
     }
 
-    // ── Simulated ms counter (smooth 000–999) ──
-    let msSpeed = 1.0;
-    if (slowFactor > 1 && realNow < slowUntil) {
-      msSpeed = 1 / slowFactor;
-    }
-    msSimOffset += dt * msSpeed;
-    if (msSimOffset >= 1000) msSimOffset -= 1000;
+    // ── Lag accumulation / drain ──
+    // Extra rate from an active ambient glitch
+    const extraRate = (realNow < glitchUntil) ? glitchLagExtra : 0;
 
-    // ── Effective time ──
-    let effectiveMs = realNow + timeOffset;
-    const now = new Date(effectiveMs);
-
-    // ── Freeze glitch ──
-    let displaySec;
-    if (glitchFreeze && realNow < glitchFreezeUntil) {
-      displaySec = frozenSecond;
-    } else {
-      glitchFreeze = false;
-      displaySec = now.getSeconds();
+    if (holdActive) {
+      // Display runs slower the longer you hold
+      lag += dt * (HOLD_LAG_RATE + extraRate);
+      lag = Math.min(lag, 10000); // hard cap at 10s behind
+    } else if (lag > 0) {
+      // After release: drain slowly — never snap back
+      lag = Math.max(0, lag - dt * (RECOVER_RATE + extraRate));
     }
 
-    // ── Slow factor for seconds display ──
-    // (just visual — we slow the ms counter, seconds still tick real)
+    // ── Displayed time derived continuously from lag ──
+    const displayMs = realNow - lag;
+    const now = new Date(displayMs);
+
     const hh = pad2(now.getHours());
     const mm = pad2(now.getMinutes());
-    const ss = pad2(displaySec);
-    const ms = pad3(msSimOffset);
+    const ss = pad2(now.getSeconds());
+    const ms = pad3(now.getMilliseconds());
 
     // Update date once per minute
     if (ts - lastTickTime > 60000 || lastTickTime === 0) {
@@ -478,13 +474,13 @@
     timeDisplay.textContent = `${hh}:${mm}`;
     subTime.textContent = `${ss}:${ms}`;
 
-    // Update hold ring if active
-    if (holdActive && holdStart !== null) {
-      const elapsed = realNow - holdStart;
-      const maxRing = 1200; // ring fills over 1200ms
-      const ratio = Math.min(elapsed / maxRing, 1);
-      const circumference = 226;
-      ringProgress.style.strokeDashoffset = circumference * (1 - ratio);
+    // ── Hold ring: reflects current lag — visible while holding or draining ──
+    if (lag > 0) {
+      holdRing.classList.add('visible');
+      const ratio = Math.min(lag / 3000, 1);
+      ringProgress.style.strokeDashoffset = 226 * (1 - ratio);
+    } else if (!holdActive) {
+      holdRing.classList.remove('visible');
     }
 
     animFrameId = requestAnimationFrame(tick);
@@ -492,24 +488,20 @@
 
   // ─── Glitch ───────────────────────────────────────────────────────────────────
   function triggerGlitch() {
-    const type = Math.random() < 0.5 ? 'freeze' : 'jump';
+    // Two flavours, both lag-based — no jumps:
+    // "drag": briefly spike the lag rate so the clock slows noticeably
+    // "drift": slowly add a small extra lag that then drains like normal
+    const type = Math.random() < 0.5 ? 'drag' : 'drift';
 
-    if (type === 'freeze') {
-      // micro-freeze: repeat same second
-      glitchFreeze = true;
-      frozenSecond = new Date(Date.now() + timeOffset).getSeconds();
-      glitchFreezeUntil = Date.now() + randBetween(800, 1400);
+    if (type === 'drag') {
+      // Clock slows sharply for ~600–1000ms
+      glitchLagExtra = 0.55;
+      glitchUntil = Date.now() + randBetween(600, 1000);
       timeDisplay.classList.add('glitch');
-      setTimeout(() => timeDisplay.classList.remove('glitch'), 120);
+      setTimeout(() => timeDisplay.classList.remove('glitch'), 100);
     } else {
-      // micro-jump: skip ~1 second
-      timeOffset += randBetween(800, 1500);
-      timeDisplay.classList.add('glitch');
-      fxOverlay.style.background = 'rgba(255,255,255,0.03)';
-      setTimeout(() => {
-        timeDisplay.classList.remove('glitch');
-        fxOverlay.style.background = 'transparent';
-      }, 120);
+      // Add a small passive lag burst (~300–700ms worth) that drains on its own
+      lag += randBetween(300, 700);
     }
   }
 
@@ -521,8 +513,6 @@
 
     holdActive = true;
     holdStart = Date.now();
-    sweetSpot = randBetween(400, 900);
-
     holdRing.classList.add('visible');
     ringProgress.style.strokeDashoffset = '226';
   }
@@ -533,64 +523,12 @@
     if (e.target === cameraBtn || cameraBtn.contains(e.target)) return;
 
     holdActive = false;
-    holdRing.classList.remove('visible');
-    ringProgress.style.strokeDashoffset = '226';
-
-    const duration = Date.now() - holdStart;
     holdStart = null;
+    holdRing.classList.remove('visible');
+    // Ring stays at current fill — it drains visually as lag drains in tick()
 
-    const tolerance = 120; // ms either side of sweet spot
-
-    if (duration >= sweetSpot - tolerance && duration <= sweetSpot + tolerance) {
-      // SUCCESS — time slows
-      triggerSuccess();
-    } else if (duration > sweetSpot + tolerance) {
-      // BREAK — time jumps
-      triggerBreak();
-    }
-    // else: too short, nothing
-  }
-
-  function triggerSuccess() {
-    vibrate([30]);
-    slowFactor = 4.0;
-    slowUntil = Date.now() + 1200;
-
-    // Restore after
-    setTimeout(() => {
-      slowFactor = 1.0;
-    }, 1200);
-  }
-
-  function triggerBreak() {
-    // Jump forward 2–4 seconds
-    const jump = randBetween(2000, 4000);
-    timeOffset += jump;
-
-    timeDisplay.classList.add('glitch');
-    fxOverlay.style.background = 'rgba(255,255,255,0.05)';
-    setTimeout(() => {
-      timeDisplay.classList.remove('glitch');
-      fxOverlay.style.background = 'transparent';
-    }, 180);
-
-    // Return offset to 0 gradually over ~800ms
-    const startOffset = timeOffset;
-    const startTime = Date.now();
-    const returnDuration = 800;
-    function returnTick() {
-      const elapsed = Date.now() - startTime;
-      if (elapsed < returnDuration) {
-        const t = elapsed / returnDuration;
-        timeOffset = startOffset * (1 - t) + (startOffset - jump) * t + jump;
-        // Actually: we just want to drain the extra jump back, keep natural drift
-        // simpler: drain timeOffset back toward natural over time
-        requestAnimationFrame(returnTick);
-      } else {
-        timeOffset -= jump;
-      }
-    }
-    // Don't drain — let it stay slightly off, that's the instability
+    // If enough lag was built up, give haptic confirmation
+    if (lag > 400) vibrate([20]);
   }
 
   // ─── User counters ────────────────────────────────────────────────────────────
