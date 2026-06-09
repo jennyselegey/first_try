@@ -7,14 +7,14 @@
 
 <style>
 
-/* 🔥 полностью убираем выделение и callout */
+/* 🔥 максимально жестко отключаем выделение */
 * {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 
-body {
+html, body {
   margin:0;
   background:#000;
   color:#fff;
@@ -24,6 +24,11 @@ body {
   justify-content:center;
   align-items:center;
   height:100vh;
+
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent;
 
   touch-action: manipulation;
 }
@@ -76,8 +81,17 @@ body {
 
 <script>
 
-/* 🔥 убираем контекстное меню (Copy / Look Up) */
+/* 🔥 УБИВАЕМ ВСЁ НАТИВНОЕ ПОВЕДЕНИЕ iOS */
 document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("selectstart", e => e.preventDefault());
+document.addEventListener("gesturestart", e => e.preventDefault());
+
+document.addEventListener("touchstart", e => {
+  if (e.touches.length === 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
 
 let lag = 0;
 let hold = false;
@@ -122,7 +136,6 @@ function tick(){
 
     if(!broken && heldTime > breakPoint){
       broken = true;
-
       document.getElementById("time").classList.add("break");
 
       if(navigator.vibrate) navigator.vibrate([20, 50, 20]);
@@ -183,6 +196,7 @@ document.body.addEventListener("touchstart", startHold);
 document.body.addEventListener("touchend", endHold);
 
 tick();
+
 </script>
 
 </body>
