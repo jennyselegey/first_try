@@ -75,6 +75,24 @@ let holdStart = 0;
 let breakPoint = randomBreak();
 let broken = false;
 
+let activeUsers = 5 + Math.floor(Math.random()*40);
+let delayedUsers = Math.floor(activeUsers * 0.3);
+
+function updateUsers(){
+  // small random walk: ±1 user, rarely
+  activeUsers = Math.max(5, Math.min(44, activeUsers + (Math.random() < 0.5 ? 1 : -1)));
+  delayedUsers = Math.floor(activeUsers * 0.3);
+  document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
+  document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
+  // next update in 60–120 seconds
+  setTimeout(updateUsers, 60000 + Math.random()*60000);
+}
+
+// set initial display before first tick
+document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
+document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
+setTimeout(updateUsers, 60000 + Math.random()*60000);
+
 function randomBreak(){
   return 4000 + Math.random()*2000; // 4–6 сек
 }
@@ -133,12 +151,6 @@ function tick(){
   document.getElementById("time").textContent = `${h}:${m}`;
   document.getElementById("sub").textContent = `${s}:${ms}`;
 
-  // фейковые живые юзеры
-  let active = 5 + Math.floor(Math.random()*40);
-  let success = Math.floor(active * 0.3);
-
-  document.getElementById("active").textContent = `${active} USERS ARE ACTIVE NOW`;
-  document.getElementById("success").textContent = `${success} USERS DELAYED TIME`;
 
   requestAnimationFrame(tick);
 }
@@ -153,6 +165,7 @@ function startHold(){
 
 function endHold(){
   hold = false;
+  document.getElementById("time").classList.remove("break");
 }
 
 document.body.addEventListener("mousedown", startHold);
