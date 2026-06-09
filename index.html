@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>Time</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    touch-action: none;
+  }
+
+  #screen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: env(safe-area-inset-top, 54px) 32px env(safe-area-inset-bottom, 34px);
+    padding-top: max(env(safe-area-inset-top), 54px);
+    padding-bottom: max(env(safe-area-inset-bottom), 34px);
+  }
+
+  /* Wake overlay */
+  #wake-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 100;
+    transition: none;
+    pointer-events: all;
+  }
+
+  #wake-overlay.waking {
+    animation: wakeUp 550ms ease-out forwards;
+  }
+
+  #wake-overlay.awake {
+    display: none;
+    pointer-events: none;
+  }
+
+  @keyframes wakeUp {
+    0%   { opacity: 1; filter: brightness(0); }
+    30%  { opacity: 0.85; filter: brightness(0.4); }
+    70%  { opacity: 0.3; filter: brightness(0.85); }
+    100% { opacity: 0; filter: brightness(1); }
+  }
+
+  /* Brightness overlay for glitch/slow/break */
+  #fx-overlay {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 50;
+    pointer-events: none;
+    transition: background 80ms ease;
+  }
+
+  /* Top section */
+  #top-section {
+    width: 100%;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 400ms ease 150ms;
+  }
+
+  #top-section.visible { opacity: 1; }
+
+  #date-label {
+    font-size: 17px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.02em;
+  }
+
+  /* Center time */
+  #center-section {
+    width: 100%;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 400ms ease 200ms;
+  }
+
+  #center-section.visible { opacity: 1; }
+
+  #time-display {
+    font-size: clamp(86px, 22vw, 110px);
+    font-weight: 200;
+    color: #fff;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: filter 80ms ease;
+  }
+
+  #time-display.glitch {
+    filter: blur(0.5px) brightness(1.15);
+  }
+
+  #sub-time {
+    font-size: 22px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Bottom section */
+  #bottom-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    opacity: 0;
+    transition: opacity 400ms ease 300ms;
+  }
+
+  #bottom-section.visible { opacity: 1; }
+
+  #cta {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  #user-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .stat-line {
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.06em;
+  }
+
+  /* Bottom buttons row */
+  #bottom-buttons {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+  }
+
+  .icon-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 150ms ease, transform 100ms ease;
+    -webkit-appearance: none;
+    outline: none;
+  }
+
+  .icon-btn:active {
+    background: rgba(255,255,255,0.22);
+    transform: scale(0.94);
+  }
+
+  .icon-btn.torch-on {
+    background: rgba(255,255,180,0.85);
+  }
+
+  .icon-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: rgba(255,255,255,0.9);
+  }
+
+  .icon-btn.torch-on svg {
+    fill: #333;
+  }
+
+  /* Torch overlay */
+  #torch-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,220,0.0);
+    z-index: 10;
+    pointer-events: none;
+    transition: background 300ms ease;
+  }
+
+  #torch-overlay.on {
+    background: rgba(255,255,220,0.92);
+  }
+
+  /* Hold progress ring */
+  #hold-ring {
+    position: fixed;
+    bottom: calc(max(env(safe-area-inset-bottom), 34px) + 120px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+    z-index: 20;
+  }
+
+  #hold-ring.visible { opacity: 0.6; }
+
+  #hold-ring svg {
+    width: 80px;
+    height: 80px;
+    transform: rotate(-90deg);
+  }
+
+  #hold-ring circle.track {
+    fill: none;
+    stroke: rgba(255,255,255,0.15);
+    stroke-width: 2;
+  }
+
+  #hold-ring circle.progress {
+    fill: none;
+    stroke: rgba(255,255,255,0.7);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 226;
+    stroke-dashoffset: 226;
+    transition: stroke-dashoffset 30ms linear;
+  }
+
+  /* Feedback text */
+  #feedback {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 30;
+    transition: opacity 200ms ease;
+    white-space: nowrap;
+  }
+
+  #feedback.visible {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<div id="wake-overlay"></div>
+<div id="torch-overlay"></div>
+<div id="fx-overlay"></div>
+
+<div id="screen">
+  <div id="top-section">
+    <div id="date-label">Saturday, 6 May</div>
+  </div>
+
+  <div id="center-section">
+    <div id="time-display">00:00</div>
+    <div id="sub-time">00:000</div>
+  </div>
+
+  <div id="bottom-section">
+    <div id="cta">Hold to slow time</div>
+    <div id="user-stats">
+      <div class="stat-line"><span id="active-count">—</span> users are active now</div>
+      <div class="stat-line"><span id="delayed-count">—</span> users delayed time</div>
+    </div>
+    <div id="bottom-buttons">
+      <button class="icon-btn" id="torch-btn" aria-label="Flashlight">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 2l-1 6H4l8 14 2-8h3L9 2zm0 3.24L11.61 10H9.82L8.6 14.9 5.46 10H7.3L9 5.24z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="camera-btn" aria-label="Camera">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7-10.5h-2.18l-1.5-1.5H8.68L7.18 5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="hold-ring">
+  <svg viewBox="0 0 80 80">
+    <circle class="track" cx="40" cy="40" r="36"/>
+    <circle class="progress" cx="40" cy="40" r="36" id="ring-progress"/>
+  </svg>
+</div>
+
+<div id="feedback" id="feedback-text"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ─── State ───────────────────────────────────────────────────────────────────
+  let awake = false;
+  let timeOffset = 0;         // ms offset from real time (for jumps)
+  let slowFactor = 1.0;       // 1 = normal, >1 = slower
+  let slowUntil = 0;
+  let glitchFreeze = false;
+  let glitchFreezeUntil = 0;
+  let frozenSecond = null;
+  let lastGlitchTime = Date.now();
+  let nextGlitchIn = randBetween(3000, 8000);
+  let msSimOffset = 0;
+  let lastRealMs = Date.now();
+
+  // Hold state
+  let holdStart = null;
+  let holdTimer = null;
+  let sweetSpot = 0;
+  let holdActive = false;
+
+  // User counters
+  let activeUsers = randIntBetween(10, 35);
+  let delayedUsers = randIntBetween(120, 400);
+
+  // Camera stream
+  let cameraStream = null;
+  let cameraVideo = null;
+  let torchOn = false;
+  let torchTrack = null;
+
+  // ─── DOM refs ─────────────────────────────────────────────────────────────────
+  const wakeOverlay   = document.getElementById('wake-overlay');
+  const torchOverlay  = document.getElementById('torch-overlay');
+  const fxOverlay     = document.getElementById('fx-overlay');
+  const topSection    = document.getElementById('top-section');
+  const centerSection = document.getElementById('center-section');
+  const bottomSection = document.getElementById('bottom-section');
+  const dateLabel     = document.getElementById('date-label');
+  const timeDisplay   = document.getElementById('time-display');
+  const subTime       = document.getElementById('sub-time');
+  const activeCount   = document.getElementById('active-count');
+  const delayedCount  = document.getElementById('delayed-count');
+  const torchBtn      = document.getElementById('torch-btn');
+  const cameraBtn     = document.getElementById('camera-btn');
+  const holdRing      = document.getElementById('hold-ring');
+  const ringProgress  = document.getElementById('ring-progress');
+  const feedback      = document.getElementById('feedback');
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────────
+  function randBetween(a, b) { return a + Math.random() * (b - a); }
+  function randIntBetween(a, b) { return Math.floor(a + Math.random() * (b - a + 1)); }
+  function pad2(n) { return String(Math.floor(n)).padStart(2, '0'); }
+  function pad3(n) { return String(Math.floor(n)).padStart(3, '0'); }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  function showFeedback(text, duration) {
+    feedback.textContent = text;
+    feedback.classList.add('visible');
+    setTimeout(() => feedback.classList.remove('visible'), duration);
+  }
+
+  // ─── Wake up ──────────────────────────────────────────────────────────────────
+  function wake() {
+    if (awake) return;
+    awake = true;
+
+    wakeOverlay.classList.add('waking');
+
+    wakeOverlay.addEventListener('animationend', () => {
+      wakeOverlay.classList.add('awake');
+    }, { once: true });
+
+    // Reveal UI
+    setTimeout(() => {
+      topSection.classList.add('visible');
+      centerSection.classList.add('visible');
+      bottomSection.classList.add('visible');
+    }, 80);
+  }
+
+  // ─── Date ─────────────────────────────────────────────────────────────────────
+  function updateDate(now) {
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    dateLabel.textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
+  }
+
+  // ─── Time tick ────────────────────────────────────────────────────────────────
+  let lastTickTime = 0;
+  let animFrameId;
+
+  function tick(ts) {
+    const realNow = Date.now();
+    const dt = realNow - lastRealMs;
+    lastRealMs = realNow;
+
+    // ── Glitch scheduler ──
+    if (realNow - lastGlitchTime > nextGlitchIn && !holdActive) {
+      triggerGlitch();
+      lastGlitchTime = realNow;
+      nextGlitchIn = randBetween(3000, 8000);
+    }
+
+    // ── Simulated ms counter (smooth 000–999) ──
+    let msSpeed = 1.0;
+    if (slowFactor > 1 && realNow < slowUntil) {
+      msSpeed = 1 / slowFactor;
+    }
+    msSimOffset += dt * msSpeed;
+    if (msSimOffset >= 1000) msSimOffset -= 1000;
+
+    // ── Effective time ──
+    let effectiveMs = realNow + timeOffset;
+    const now = new Date(effectiveMs);
+
+    // ── Freeze glitch ──
+    let displaySec;
+    if (glitchFreeze && realNow < glitchFreezeUntil) {
+      displaySec = frozenSecond;
+    } else {
+      glitchFreeze = false;
+      displaySec = now.getSeconds();
+    }
+
+    // ── Slow factor for seconds display ──
+    // (just visual — we slow the ms counter, seconds still tick real)
+    const hh = pad2(now.getHours());
+    const mm = pad2(now.getMinutes());
+    const ss = pad2(displaySec);
+    const ms = pad3(msSimOffset);
+
+    // Update date once per minute
+    if (ts - lastTickTime > 60000 || lastTickTime === 0) {
+      updateDate(now);
+      lastTickTime = ts;
+    }
+
+    timeDisplay.textContent = `${hh}:${mm}`;
+    subTime.textContent = `${ss}:${ms}`;
+
+    // Update hold ring if active
+    if (holdActive && holdStart !== null) {
+      const elapsed = realNow - holdStart;
+      const maxRing = 1200; // ring fills over 1200ms
+      const ratio = Math.min(elapsed / maxRing, 1);
+      const circumference = 226;
+      ringProgress.style.strokeDashoffset = circumference * (1 - ratio);
+    }
+
+    animFrameId = requestAnimationFrame(tick);
+  }
+
+  // ─── Glitch ───────────────────────────────────────────────────────────────────
+  function triggerGlitch() {
+    const type = Math.random() < 0.5 ? 'freeze' : 'jump';
+
+    if (type === 'freeze') {
+      // micro-freeze: repeat same second
+      glitchFreeze = true;
+      frozenSecond = new Date(Date.now() + timeOffset).getSeconds();
+      glitchFreezeUntil = Date.now() + randBetween(800, 1400);
+      timeDisplay.classList.add('glitch');
+      setTimeout(() => timeDisplay.classList.remove('glitch'), 120);
+    } else {
+      // micro-jump: skip ~1 second
+      timeOffset += randBetween(800, 1500);
+      timeDisplay.classList.add('glitch');
+      fxOverlay.style.background = 'rgba(255,255,255,0.03)';
+      setTimeout(() => {
+        timeDisplay.classList.remove('glitch');
+        fxOverlay.style.background = 'transparent';
+      }, 120);
+    }
+  }
+
+  // ─── Hold mechanic ───────────────────────────────────────────────────────────
+  function onHoldStart(e) {
+    if (!awake) { wake(); return; }
+    if (e.target === torchBtn || torchBtn.contains(e.target)) return;
+    if (e.target === cameraBtn || cameraBtn.contains(e.target)) return;
+
+    holdActive = true;
+    holdStart = Date.now();
+    sweetSpot = randBetween(400, 900);
+
+    holdRing.classList.add('visible');
+    ringProgress.style.strokeDashoffset = '226';
+  }
+
+  function onHoldEnd(e) {
+    if (!awake || !holdActive) return;
+    if (e.target === torchBtn || torchBtn.contains(e.target)) return;
+    if (e.target === cameraBtn || cameraBtn.contains(e.target)) return;
+
+    holdActive = false;
+    holdRing.classList.remove('visible');
+    ringProgress.style.strokeDashoffset = '226';
+
+    const duration = Date.now() - holdStart;
+    holdStart = null;
+
+    const tolerance = 120; // ms either side of sweet spot
+
+    if (duration >= sweetSpot - tolerance && duration <= sweetSpot + tolerance) {
+      // SUCCESS — time slows
+      triggerSuccess();
+    } else if (duration > sweetSpot + tolerance) {
+      // BREAK — time jumps
+      triggerBreak();
+    }
+    // else: too short, nothing
+  }
+
+  function triggerSuccess() {
+    vibrate([30]);
+    slowFactor = 4.0;
+    slowUntil = Date.now() + 1200;
+
+    // Restore after
+    setTimeout(() => {
+      slowFactor = 1.0;
+    }, 1200);
+  }
+
+  function triggerBreak() {
+    // Jump forward 2–4 seconds
+    const jump = randBetween(2000, 4000);
+    timeOffset += jump;
+
+    timeDisplay.classList.add('glitch');
+    fxOverlay.style.background = 'rgba(255,255,255,0.05)';
+    setTimeout(() => {
+      timeDisplay.classList.remove('glitch');
+      fxOverlay.style.background = 'transparent';
+    }, 180);
+
+    // Return offset to 0 gradually over ~800ms
+    const startOffset = timeOffset;
+    const startTime = Date.now();
+    const returnDuration = 800;
+    function returnTick() {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < returnDuration) {
+        const t = elapsed / returnDuration;
+        timeOffset = startOffset * (1 - t) + (startOffset - jump) * t + jump;
+        // Actually: we just want to drain the extra jump back, keep natural drift
+        // simpler: drain timeOffset back toward natural over time
+        requestAnimationFrame(returnTick);
+      } else {
+        timeOffset -= jump;
+      }
+    }
+    // Don't drain — let it stay slightly off, that's the instability
+  }
+
+  // ─── User counters ────────────────────────────────────────────────────────────
+  function updateUserCounters() {
+    activeCount.textContent = activeUsers;
+    delayedCount.textContent = delayedUsers;
+  }
+
+  function scheduleUserUpdate() {
+    const delay = randBetween(2000, 4000);
+    setTimeout(() => {
+      // Active: random walk within 5–50
+      const delta = randIntBetween(-4, 4);
+      activeUsers = Math.max(5, Math.min(50, activeUsers + delta));
+
+      // Delayed: slow increment
+      if (Math.random() < 0.6) {
+        delayedUsers += randIntBetween(1, 3);
+      }
+
+      updateUserCounters();
+      scheduleUserUpdate();
+    }, delay);
+  }
+
+  // ─── Torch ────────────────────────────────────────────────────────────────────
+  async function toggleTorch() {
+    torchOn = !torchOn;
+
+    if (torchOn) {
+      torchBtn.classList.add('torch-on');
+
+      // Try real torch via camera
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        const track = stream.getVideoTracks()[0];
+        if (track.getCapabilities && track.getCapabilities().torch) {
+          await track.applyConstraints({ advanced: [{ torch: true }] });
+          torchTrack = track;
+          torchOverlay.classList.remove('on'); // real torch, don't need fake
+          return;
+        }
+        stream.getTracks().forEach(t => t.stop());
+      } catch(e) {}
+
+      // Fallback: bright screen overlay
+      torchOverlay.classList.add('on');
+    } else {
+      torchBtn.classList.remove('torch-on');
+      torchOverlay.classList.remove('on');
+
+      if (torchTrack) {
+        try {
+          await torchTrack.applyConstraints({ advanced: [{ torch: false }] });
+          torchTrack.stop();
+        } catch(e) {}
+        torchTrack = null;
+      }
+    }
+  }
+
+  // ─── Camera ───────────────────────────────────────────────────────────────────
+  async function openCamera() {
+    // Create a fullscreen video overlay
+    if (cameraStream) {
+      closeCameraOverlay();
+      return;
+    }
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 } },
+        audio: false
+      });
+    } catch(e) {
+      // Try front camera
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch(err) {
+        return;
+      }
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'camera-overlay';
+    overlay.style.cssText = `
+      position:fixed;inset:0;z-index:200;background:#000;
+      display:flex;align-items:center;justify-content:center;
+    `;
+
+    cameraVideo = document.createElement('video');
+    cameraVideo.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+    cameraVideo.srcObject = cameraStream;
+    cameraVideo.autoplay = true;
+    cameraVideo.playsInline = true;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = `
+      position:absolute;top:max(env(safe-area-inset-top),20px);right:20px;
+      width:44px;height:44px;border-radius:50%;
+      background:rgba(0,0,0,0.4);border:none;
+      color:#fff;font-size:26px;cursor:pointer;z-index:201;
+      display:flex;align-items:center;justify-content:center;
+    `;
+    closeBtn.onclick = closeCameraOverlay;
+
+    overlay.appendChild(cameraVideo);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+  }
+
+  function closeCameraOverlay() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+    const overlay = document.getElementById('camera-overlay');
+    if (overlay) overlay.remove();
+    cameraVideo = null;
+  }
+
+  // ─── Event listeners ─────────────────────────────────────────────────────────
+  document.addEventListener('touchstart', onHoldStart, { passive: true });
+  document.addEventListener('touchend', onHoldEnd, { passive: true });
+  document.addEventListener('touchcancel', onHoldEnd, { passive: true });
+  document.addEventListener('mousedown', onHoldStart);
+  document.addEventListener('mouseup', onHoldEnd);
+
+  torchBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleTorch();
+  });
+
+  cameraBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCamera();
+  });
+
+  // Prevent context menu on long press
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // ─── Init ─────────────────────────────────────────────────────────────────────
+  updateDate(new Date());
+  updateUserCounters();
+  scheduleUserUpdate();
+  requestAnimationFrame(tick);
+
+})();
+</script>
+</body>
+</html>
