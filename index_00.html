@@ -6,6 +6,14 @@
 <title>Time</title>
 
 <style>
+
+/* 🔥 полностью убираем выделение и callout */
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 body {
   margin:0;
   background:#000;
@@ -16,7 +24,8 @@ body {
   justify-content:center;
   align-items:center;
   height:100vh;
-  user-select:none;
+
+  touch-action: manipulation;
 }
 
 #time {
@@ -49,6 +58,7 @@ body {
 
 .break {
 }
+
 </style>
 </head>
 
@@ -65,6 +75,10 @@ body {
 </div>
 
 <script>
+
+/* 🔥 убираем контекстное меню (Copy / Look Up) */
+document.addEventListener("contextmenu", e => e.preventDefault());
+
 let lag = 0;
 let hold = false;
 let last = Date.now();
@@ -78,22 +92,21 @@ let activeUsers = 5 + Math.floor(Math.random()*40);
 let delayedUsers = Math.floor(activeUsers * 0.3);
 
 function updateUsers(){
-  // small random walk: ±1 user, rarely
   activeUsers = Math.max(5, Math.min(44, activeUsers + (Math.random() < 0.5 ? 1 : -1)));
   delayedUsers = Math.floor(activeUsers * 0.3);
+
   document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
   document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
-  // next update in 60–120 seconds
+
   setTimeout(updateUsers, 60000 + Math.random()*60000);
 }
 
-// set initial display before first tick
 document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
 document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
 setTimeout(updateUsers, 60000 + Math.random()*60000);
 
 function randomBreak(){
-  return 4000 + Math.random()*2000; // 4–6 сек
+  return 4000 + Math.random()*2000;
 }
 
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -110,7 +123,6 @@ function tick(){
     if(!broken && heldTime > breakPoint){
       broken = true;
 
-      // ощущение "сломалось"
       document.getElementById("time").classList.add("break");
 
       if(navigator.vibrate) navigator.vibrate([20, 50, 20]);
@@ -131,7 +143,6 @@ function tick(){
         lastPulse = now;
       }
     } else {
-      // если передержала → система сопротивляется
       lag -= dt * 0.2;
     }
 
@@ -149,7 +160,6 @@ function tick(){
 
   document.getElementById("time").textContent = `${h}:${m}`;
   document.getElementById("sub").textContent = `${s}:${ms}`;
-
 
   requestAnimationFrame(tick);
 }
