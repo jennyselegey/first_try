@@ -1,0 +1,106 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Time</title>
+
+<style>
+body {
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:-apple-system, sans-serif;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  user-select:none;
+}
+
+#time {
+  font-size:90px;
+  font-weight:200;
+}
+
+#sub {
+  opacity:0.5;
+  margin-top:5px;
+}
+
+#cta {
+  margin-top:40px;
+  opacity:0.4;
+  letter-spacing:0.2em;
+  font-size:12px;
+}
+
+.glitch {
+  filter:blur(1px);
+}
+</style>
+</head>
+
+<body>
+
+<div id="time">00:00</div>
+<div id="sub">00:000</div>
+<div id="cta">HOLD TO SLOW TIME</div>
+
+<script>
+let lag = 0;
+let hold = false;
+let last = Date.now();
+let lastPulse = 0;
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function pad3(n){ return String(n).padStart(3,"0"); }
+
+function tick(){
+  let now = Date.now();
+  let dt = now - last;
+  last = now;
+
+  if(hold){
+    lag += dt * 0.25;
+
+    if(now - lastPulse > 700){
+      let jump = 800 + Math.random()*1200;
+      lag += jump;
+
+      document.getElementById("time").classList.add("glitch");
+      setTimeout(()=>document.getElementById("time").classList.remove("glitch"),120);
+
+      if(navigator.vibrate) navigator.vibrate(10);
+
+      lastPulse = now;
+    }
+  } else {
+    lag -= dt * 0.05;
+    if(lag < 0) lag = 0;
+  }
+
+  let display = new Date(now - lag);
+
+  let h = pad(display.getHours());
+  let m = pad(display.getMinutes());
+  let s = pad(display.getSeconds());
+  let ms = pad3(display.getMilliseconds());
+
+  document.getElementById("time").textContent = `${h}:${m}`;
+  document.getElementById("sub").textContent = `${s}:${ms}`;
+
+  requestAnimationFrame(tick);
+}
+
+document.body.addEventListener("mousedown", ()=>hold=true);
+document.body.addEventListener("mouseup", ()=>hold=false);
+document.body.addEventListener("touchstart", ()=>hold=true);
+document.body.addEventListener("touchend", ()=>hold=false);
+
+tick();
+</script>
+
+</body>
+</html>
