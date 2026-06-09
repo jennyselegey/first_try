@@ -6,8 +6,6 @@
 <title>Time</title>
 
 <style>
-
-/* 🔥 максимально жестко отключаем выделение */
 * {
   -webkit-user-select: none !important;
   user-select: none !important;
@@ -17,82 +15,37 @@
 html, body {
   margin:0;
   background:#000;
-  color:#fff;
-  font-family:-apple-system, sans-serif;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
   height:100vh;
-
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-  -webkit-tap-highlight-color: transparent;
-
+  overflow:hidden;
   touch-action: manipulation;
 }
-
-#time {
-  font-size:90px;
-  font-weight:200;
+canvas {
+  display:block;
 }
-
-#sub {
-  opacity:0.5;
-  margin-top:5px;
-}
-
-#cta {
-  margin-top:40px;
-  opacity:0.4;
-  letter-spacing:0.2em;
-  font-size:12px;
-}
-
-#users {
-  margin-top:10px;
-  opacity:0.4;
-  font-size:12px;
-  text-align:center;
-}
-
-.glitch {
-  filter:blur(1px);
-}
-
-.break {
-}
-
 </style>
 </head>
 
 <body>
 
-<div id="time">00:00</div>
-<div id="sub">00:000</div>
-
-<div id="cta">HOLD TO SLOW TIME</div>
-
-<div id="users">
-  <div id="active">12 USERS ARE ACTIVE NOW</div>
-  <div id="success">4 USERS DELAYED TIME</div>
-</div>
+<canvas id="c"></canvas>
 
 <script>
 
-/* 🔥 УБИВАЕМ ВСЁ НАТИВНОЕ ПОВЕДЕНИЕ iOS */
+// 🔥 убиваем iOS жесты
 document.addEventListener("contextmenu", e => e.preventDefault());
 document.addEventListener("selectstart", e => e.preventDefault());
-document.addEventListener("gesturestart", e => e.preventDefault());
 
-document.addEventListener("touchstart", e => {
-  if (e.touches.length === 1) {
-    e.preventDefault();
-  }
-}, { passive: false });
+let canvas = document.getElementById("c");
+let ctx = canvas.getContext("2d");
 
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
 
+// --- TIME SYSTEM ---
 let lag = 0;
 let hold = false;
 let last = Date.now();
@@ -102,22 +55,16 @@ let holdStart = 0;
 let breakPoint = randomBreak();
 let broken = false;
 
-let activeUsers = 5 + Math.floor(Math.random()*40);
-let delayedUsers = Math.floor(activeUsers * 0.3);
+// --- USERS ---
+let activeUsers = 10;
+let delayedUsers = 3;
 
 function updateUsers(){
-  activeUsers = Math.max(5, Math.min(44, activeUsers + (Math.random() < 0.5 ? 1 : -1)));
+  activeUsers = Math.max(5, Math.min(50, activeUsers + (Math.random() < 0.5 ? 1 : -1)));
   delayedUsers = Math.floor(activeUsers * 0.3);
-
-  document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
-  document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
-
-  setTimeout(updateUsers, 60000 + Math.random()*60000);
+  setTimeout(updateUsers, 60000);
 }
-
-document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
-document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
-setTimeout(updateUsers, 60000 + Math.random()*60000);
+updateUsers();
 
 function randomBreak(){
   return 4000 + Math.random()*2000;
@@ -127,6 +74,7 @@ function pad(n){ return String(n).padStart(2,"0"); }
 function pad3(n){ return String(n).padStart(3,"0"); }
 
 function tick(){
+
   let now = Date.now();
   let dt = now - last;
   last = now;
@@ -136,23 +84,13 @@ function tick(){
 
     if(!broken && heldTime > breakPoint){
       broken = true;
-      document.getElementById("time").classList.add("break");
-
-      if(navigator.vibrate) navigator.vibrate([20, 50, 20]);
     }
 
     if(!broken){
       lag += dt * 0.25;
 
       if(now - lastPulse > 700){
-        let jump = 800 + Math.random()*1200;
-        lag += jump;
-
-        document.getElementById("time").classList.add("glitch");
-        setTimeout(()=>document.getElementById("time").classList.remove("glitch"),120);
-
-        if(navigator.vibrate) navigator.vibrate(10);
-
+        lag += 800 + Math.random()*1200;
         lastPulse = now;
       }
     } else {
@@ -171,29 +109,58 @@ function tick(){
   let s = pad(display.getSeconds());
   let ms = pad3(display.getMilliseconds());
 
-  document.getElementById("time").textContent = `${h}:${m}`;
-  document.getElementById("sub").textContent = `${s}:${ms}`;
+  draw(h, m, s, ms);
 
   requestAnimationFrame(tick);
 }
 
+// --- DRAW ---
+function draw(h, m, s, ms){
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle = "#fff";
+
+  // main time
+  ctx.font = "200 90px -apple-system";
+  ctx.textAlign = "center";
+  ctx.fillText(`${h}:${m}`, canvas.width/2, canvas.height/2);
+
+  // sub
+  ctx.globalAlpha = 0.5;
+  ctx.font = "200 22px -apple-system";
+  ctx.fillText(`${s}:${ms}`, canvas.width/2, canvas.height/2 + 40);
+
+  // CTA
+  ctx.globalAlpha = 0.4;
+  ctx.font = "12px -apple-system";
+  ctx.fillText("HOLD TO SLOW TIME", canvas.width/2, canvas.height/2 + 100);
+
+  // users
+  ctx.globalAlpha = 0.4;
+  ctx.fillText(`${activeUsers} USERS ARE ACTIVE NOW`, canvas.width/2, canvas.height/2 + 130);
+  ctx.fillText(`${delayedUsers} USERS DELAYED TIME`, canvas.width/2, canvas.height/2 + 150);
+
+  ctx.globalAlpha = 1;
+}
+
+// --- INTERACTION ---
 function startHold(){
   hold = true;
   holdStart = Date.now();
   breakPoint = randomBreak();
   broken = false;
-  document.getElementById("time").classList.remove("break");
 }
 
 function endHold(){
   hold = false;
-  document.getElementById("time").classList.remove("break");
 }
 
-document.body.addEventListener("mousedown", startHold);
-document.body.addEventListener("mouseup", endHold);
-document.body.addEventListener("touchstart", startHold);
-document.body.addEventListener("touchend", endHold);
+canvas.addEventListener("touchstart", startHold, {passive:false});
+canvas.addEventListener("touchend", endHold);
+
+canvas.addEventListener("mousedown", startHold);
+canvas.addEventListener("mouseup", endHold);
 
 tick();
 
