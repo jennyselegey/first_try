@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Time</title>
+
+<style>
+body {
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:-apple-system, sans-serif;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  user-select:none;
+}
+
+#time {
+  font-size:90px;
+  font-weight:200;
+}
+
+#sub {
+  opacity:0.5;
+  margin-top:5px;
+}
+
+#cta {
+  margin-top:40px;
+  opacity:0.4;
+  letter-spacing:0.2em;
+  font-size:12px;
+}
+
+#users {
+  margin-top:10px;
+  opacity:0.4;
+  font-size:12px;
+  text-align:center;
+}
+
+.glitch {
+  filter:blur(1px);
+}
+
+.break {
+}
+</style>
+</head>
+
+<body>
+
+<div id="time">00:00</div>
+<div id="sub">00:000</div>
+
+<div id="cta">HOLD TO SLOW TIME</div>
+
+<div id="users">
+  <div id="active">12 USERS ARE ACTIVE NOW</div>
+  <div id="success">4 USERS DELAYED TIME</div>
+</div>
+
+<script>
+let lag = 0;
+let hold = false;
+let last = Date.now();
+let lastPulse = 0;
+
+let holdStart = 0;
+let breakPoint = randomBreak();
+let broken = false;
+
+let activeUsers = 5 + Math.floor(Math.random()*40);
+let delayedUsers = Math.floor(activeUsers * 0.3);
+
+function updateUsers(){
+  // small random walk: ±1 user, rarely
+  activeUsers = Math.max(5, Math.min(44, activeUsers + (Math.random() < 0.5 ? 1 : -1)));
+  delayedUsers = Math.floor(activeUsers * 0.3);
+  document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
+  document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
+  // next update in 60–120 seconds
+  setTimeout(updateUsers, 60000 + Math.random()*60000);
+}
+
+// set initial display before first tick
+document.getElementById("active").textContent = `${activeUsers} USERS ARE ACTIVE NOW`;
+document.getElementById("success").textContent = `${delayedUsers} USERS DELAYED TIME`;
+setTimeout(updateUsers, 60000 + Math.random()*60000);
+
+function randomBreak(){
+  return 4000 + Math.random()*2000; // 4–6 сек
+}
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function pad3(n){ return String(n).padStart(3,"0"); }
+
+function tick(){
+  let now = Date.now();
+  let dt = now - last;
+  last = now;
+
+  if(hold){
+    let heldTime = now - holdStart;
+
+    if(!broken && heldTime > breakPoint){
+      broken = true;
+
+      // ощущение "сломалось"
+      document.getElementById("time").classList.add("break");
+
+      if(navigator.vibrate) navigator.vibrate([20, 50, 20]);
+    }
+
+    if(!broken){
+      lag += dt * 0.25;
+
+      if(now - lastPulse > 700){
+        let jump = 800 + Math.random()*1200;
+        lag += jump;
+
+        document.getElementById("time").classList.add("glitch");
+        setTimeout(()=>document.getElementById("time").classList.remove("glitch"),120);
+
+        if(navigator.vibrate) navigator.vibrate(10);
+
+        lastPulse = now;
+      }
+    } else {
+      // если передержала → система сопротивляется
+      lag -= dt * 0.2;
+    }
+
+  } else {
+    lag -= dt * 0.05;
+    if(lag < 0) lag = 0;
+  }
+
+  let display = new Date(now - lag);
+
+  let h = pad(display.getHours());
+  let m = pad(display.getMinutes());
+  let s = pad(display.getSeconds());
+  let ms = pad3(display.getMilliseconds());
+
+  document.getElementById("time").textContent = `${h}:${m}`;
+  document.getElementById("sub").textContent = `${s}:${ms}`;
+
+
+  requestAnimationFrame(tick);
+}
+
+function startHold(){
+  hold = true;
+  holdStart = Date.now();
+  breakPoint = randomBreak();
+  broken = false;
+  document.getElementById("time").classList.remove("break");
+}
+
+function endHold(){
+  hold = false;
+  document.getElementById("time").classList.remove("break");
+}
+
+document.body.addEventListener("mousedown", startHold);
+document.body.addEventListener("mouseup", endHold);
+document.body.addEventListener("touchstart", startHold);
+document.body.addEventListener("touchend", endHold);
+
+tick();
+</script>
+
+</body>
+</html>
