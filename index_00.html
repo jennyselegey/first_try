@@ -2,22 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Time</title>
 
 <style>
-* {
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-}
-
 html, body {
   margin:0;
   background:#000;
-  height:100vh;
   overflow:hidden;
-  touch-action: manipulation;
+  touch-action: none;
 }
 canvas {
   display:block;
@@ -31,10 +24,6 @@ canvas {
 
 <script>
 
-// 🔥 убиваем iOS жесты
-document.addEventListener("contextmenu", e => e.preventDefault());
-document.addEventListener("selectstart", e => e.preventDefault());
-
 let canvas = document.getElementById("c");
 let ctx = canvas.getContext("2d");
 
@@ -45,7 +34,9 @@ function resize(){
 resize();
 window.addEventListener("resize", resize);
 
-// --- TIME SYSTEM ---
+// ----------------
+// TIME SYSTEM
+// ----------------
 let lag = 0;
 let hold = false;
 let last = Date.now();
@@ -55,24 +46,47 @@ let holdStart = 0;
 let breakPoint = randomBreak();
 let broken = false;
 
-// --- USERS ---
-let activeUsers = 10;
-let delayedUsers = 3;
-
-function updateUsers(){
-  activeUsers = Math.max(5, Math.min(50, activeUsers + (Math.random() < 0.5 ? 1 : -1)));
-  delayedUsers = Math.floor(activeUsers * 0.3);
-  setTimeout(updateUsers, 60000);
-}
-updateUsers();
-
 function randomBreak(){
   return 4000 + Math.random()*2000;
 }
 
-function pad(n){ return String(n).padStart(2,"0"); }
-function pad3(n){ return String(n).padStart(3,"0"); }
+// ----------------
+// SCREEN STATE
+// ----------------
+let screen = 0; // 0 = time, 1 = news
 
+// swipe
+let startX = 0;
+
+canvas.addEventListener("touchstart", e=>{
+  startX = e.touches[0].clientX;
+  startHold();
+}, {passive:false});
+
+canvas.addEventListener("touchend", e=>{
+  let dx = e.changedTouches[0].clientX - startX;
+
+  if(Math.abs(dx) > 80){
+    screen = screen === 0 ? 1 : 0;
+  }
+
+  endHold();
+});
+
+// ----------------
+// NEWS DATA
+// ----------------
+let news = [
+  {title:"Ceasefire negotiations continue", time: 5},
+  {title:"New tech regulation announced", time: 12},
+  {title:"Markets show early recovery", time: 25},
+  {title:"Climate report released", time: 40},
+  {title:"Local elections results expected", time: 60}
+];
+
+// ----------------
+// LOOP
+// ----------------
 function tick(){
 
   let now = Date.now();
@@ -104,47 +118,90 @@ function tick(){
 
   let display = new Date(now - lag);
 
-  let h = pad(display.getHours());
-  let m = pad(display.getMinutes());
-  let s = pad(display.getSeconds());
-  let ms = pad3(display.getMilliseconds());
-
-  draw(h, m, s, ms);
+  draw(display);
 
   requestAnimationFrame(tick);
 }
 
-// --- DRAW ---
-function draw(h, m, s, ms){
+// ----------------
+// DRAW
+// ----------------
+function draw(display){
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
   ctx.fillStyle = "#fff";
 
-  // main time
-  ctx.font = "200 90px -apple-system";
+  if(screen === 0){
+    drawTime(display);
+  } else {
+    drawNews(display);
+  }
+}
+
+// TIME SCREEN
+function drawTime(d){
+
+  let h = pad(d.getHours());
+  let m = pad(d.getMinutes());
+  let s = pad(d.getSeconds());
+  let ms = pad3(d.getMilliseconds());
+
   ctx.textAlign = "center";
+
+  ctx.font = "200 90px -apple-system";
   ctx.fillText(`${h}:${m}`, canvas.width/2, canvas.height/2);
 
-  // sub
   ctx.globalAlpha = 0.5;
   ctx.font = "200 22px -apple-system";
   ctx.fillText(`${s}:${ms}`, canvas.width/2, canvas.height/2 + 40);
 
-  // CTA
   ctx.globalAlpha = 0.4;
   ctx.font = "12px -apple-system";
   ctx.fillText("HOLD TO SLOW TIME", canvas.width/2, canvas.height/2 + 100);
 
-  // users
-  ctx.globalAlpha = 0.4;
-  ctx.fillText(`${activeUsers} USERS ARE ACTIVE NOW`, canvas.width/2, canvas.height/2 + 130);
-  ctx.fillText(`${delayedUsers} USERS DELAYED TIME`, canvas.width/2, canvas.height/2 + 150);
-
   ctx.globalAlpha = 1;
 }
 
-// --- INTERACTION ---
+// NEWS SCREEN
+function drawNews(display){
+
+  ctx.textAlign = "left";
+
+  let now = display.getTime();
+
+  ctx.font = "600 20px -apple-system";
+
+  for(let i=0;i<news.length;i++){
+
+    let y = 120 + i*80;
+
+    let minutesAgo = news[i].time;
+    let timestamp = new Date(now - minutesAgo*60000);
+
+    let h = pad(timestamp.getHours());
+    let m = pad(timestamp.getMinutes());
+
+    ctx.fillText(news[i].title, 20, y);
+
+    ctx.globalAlpha = 0.5;
+    ctx.font = "14px -apple-system";
+    ctx.fillText(`${h}:${m}`, 20, y + 25);
+
+    ctx.globalAlpha = 1;
+    ctx.font = "600 20px -apple-system";
+  }
+
+}
+
+// ----------------
+// HELPERS
+// ----------------
+function pad(n){ return String(n).padStart(2,"0"); }
+function pad3(n){ return String(n).padStart(3,"0"); }
+
+// ----------------
+// INTERACTION
+// ----------------
 function startHold(){
   hold = true;
   holdStart = Date.now();
@@ -156,13 +213,13 @@ function endHold(){
   hold = false;
 }
 
-canvas.addEventListener("touchstart", startHold, {passive:false});
-canvas.addEventListener("touchend", endHold);
-
+// desktop fallback
 canvas.addEventListener("mousedown", startHold);
 canvas.addEventListener("mouseup", endHold);
 
+// ----------------
 tick();
+// ----------------
 
 </script>
 
