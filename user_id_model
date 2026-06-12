@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USER ID MODEL — INTRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0526FB;       /* BSOD blue */
+    --white:#FFFFFF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--blue);
+    color:var(--white);
+    font-family:'Press Start 2P', monospace;
+    overflow:hidden;
+    cursor:pointer;
+  }
+
+  /* CRT scanlines + faint flicker */
+  body::after{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 3px,
+      rgba(0,0,0,0.07) 3px,
+      rgba(0,0,0,0.07) 4px
+    );
+    animation: flicker 4s infinite steps(2, end);
+  }
+  @keyframes flicker{
+    0%,100%{opacity:.9}
+    48%{opacity:.9}
+    50%{opacity:.65}
+    52%{opacity:.9}
+  }
+
+  .screen{
+    height:100%;
+    padding:6vh 5vw;
+    display:flex;
+    flex-direction:column;
+  }
+
+  p#text{
+    font-size:clamp(9px, 1.55vw, 22px);
+    line-height:2.3;
+    text-align:justify;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+
+  /* every plain word: hidden, then pops in like terminal rendering */
+  .w{
+    opacity:0;
+  }
+  .w.on{
+    animation:pop .001s steps(1,end) forwards;
+  }
+  @keyframes pop{ to{opacity:1} }
+
+  /* keywords: visible from the start, fly in from the sides, jerky steps */
+  .kw{
+    display:inline-block;
+    will-change:transform;
+    /* selected menu item, like SET UP VCR */
+    background:var(--white);
+    color:var(--blue);
+    padding:.1em .25em;
+  }
+  .from-left  { animation: fromLeft  .9s steps(7,end) forwards; }
+  .from-right { animation: fromRight .9s steps(7,end) forwards; }
+  .from-top   { animation: fromTop   .9s steps(7,end) forwards; }
+  .from-bottom{ animation: fromBottom .9s steps(7,end) forwards; }
+
+  @keyframes fromLeft  { from{transform:translateX(-110vw)} to{transform:translateX(0)} }
+  @keyframes fromRight { from{transform:translateX( 110vw)} to{transform:translateX(0)} }
+  @keyframes fromTop   { from{transform:translateY(-110vh)} to{transform:translateY(0)} }
+  @keyframes fromBottom{ from{transform:translateY( 110vh)} to{transform:translateY(0)} }
+
+  /* blinking block cursor */
+  .cursor{
+    display:inline-block;
+    width:.8em; height:1.1em;
+    background:var(--white);
+    vertical-align:text-bottom;
+    margin-left:.3em;
+    opacity:0;
+  }
+  .cursor.on{
+    animation: blink 1s steps(1,end) infinite;
+  }
+  @keyframes blink{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+  .hint{
+    margin-top:4vh;
+    font-size:clamp(7px, .9vw, 12px);
+    opacity:0;
+    transition:opacity .3s steps(2,end);
+    letter-spacing:.1em;
+    line-height:2.2;
+    white-space:pre;
+  }
+  .hint.on{opacity:.85}
+
+  /* The Creation of Adam — two hands reaching, fingertips almost touching */
+  .ascii{
+    margin-top:auto;
+    align-self:center;
+    font-family:'Press Start 2P', monospace;
+    font-size:clamp(4px, .8vw, 10px);
+    line-height:1.65;
+    letter-spacing:0;
+    opacity:0;
+  }
+  .ascii.on{
+    animation:pop .001s steps(1,end) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .kw{animation:none !important; transform:none !important}
+    .w{opacity:1 !important; animation:none !important}
+    .cursor{animation:none !important; opacity:1}
+    body::after{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <p id="text"></p>
+  <pre class="ascii" id="ascii" aria-hidden="true">
+                          -
+                   ::....:-=+-
+               ..:==++==-:::--     -===
+              :-=+*****##=:.    ::-:.::=+
+             :-=+***###%%*=:..  -+*+--::-=++=
+         :.::-+*####%%*    ==-...-####***+==-+                             .:::...::
+     ::---=++**###%%*        +=-:-=+=#%#%%%%+-=                 .::    :-:.-=++====-:
+  ----=++***#**##%#               :-+#%+ #%%#--*   -=+=*+==+:::===-   ::+**++***++=--::::
+  --=++**#######+                   -+*   %%%               =+=+=.:--.:+#%%#**+++++++===----:::::--+
+---=++*#*###*                        *==  #%%                +=::=**+=+###%%#####***********++++++**
++++*#####*                                                 :--=++=*#*###%%#+    +#########%%########
+*######*                                                  ===*++*--++*%%*                   +*##%%%%
+#%##                                                        +#+++-=#*
+                                                            **+*  **
+                                                            ***   =</pre>
+  <div class="hint" id="hint">SELECT :&#9650; &#9660; KEY
+REPLAY :ACTION KEY</div>
+</div>
+
+<script>
+/* tokens: plain strings = normal words; objects = flying keywords */
+const TOKENS = [
+  "THE","PROJECT","TAKES","FORM","OF","A","CROSS-PLATFORM","INTERFACE,",
+  "CONNECTING","ALL","USER\u2019S","ACTIVE",
+  {t:"DIGITAL", dir:"from-right", delay:0},
+  "PLATFORMS","(APPS).","IT","VISUALIZES","AND","MAPS","HOW","PLATFORMS","INTERPRET",
+  {t:"USERS", dir:"from-left", delay:250},
+  "THROUGH","PERSONALIZATION","SYSTEMS.","USERS","CAN","INSPECT,","MODIFY,",
+  "OR","REMOVE","THOSE","INTERPRETATIONS","AND",
+  {t:"EXPERIENCE", dir:"from-left", delay:500},
+  "THEIR","FEEDS","(OF","THE","CONNECTED","TO","THE","INTERFACE","APPS)",
+  "CHANGING","IN","REAL","TIME.","INSPIRED","BY","THE","\u201CFIRST-CLASS",
+  "CITIZEN","USER","MODEL\u201D","PROPOSED","BY","KAY",
+  {t:"&", dir:"from-top", delay:750},
+  "KUMMERFELD,","THE","PROJECT","IS","EXAMINING","HOW","DIRECT","PARTICIPATION",
+  "IN","PERSONALIZATION","MIGHT","ALTER","EXISTING",
+  {t:"POWER RELATIONS", dir:"from-bottom", delay:1000},
+  "BETWEEN","USERS","AND","PLATFORMS."
+];
+
+const FLY_DURATION = 900;      // ms, matches CSS
+const LAST_FLY_DELAY = 1000;   // delay of the last keyword
+const PAUSE_AFTER_FLY = 3000;  // hold the title screen (keywords only) before body text
+const WORD_STEP = 28;          // ms between body words appearing
+
+const p = document.getElementById("text");
+const hint = document.getElementById("hint");
+const ascii = document.getElementById("ascii");
+let timers = [];
+
+function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+
+function build(){
+  clearTimers();
+  p.innerHTML = "";
+  hint.classList.remove("on");
+  ascii.classList.remove("on");
+
+  const bodyWords = [];
+
+  TOKENS.forEach((tok, i) => {
+    const span = document.createElement("span");
+    if (typeof tok === "string"){
+      span.className = "w";
+      span.textContent = tok;
+      bodyWords.push(span);
+    } else {
+      span.className = "kw " + tok.dir;
+      span.style.animationDelay = tok.delay + "ms";
+      span.textContent = tok.t;
+    }
+    p.appendChild(span);
+    if (i < TOKENS.length - 1) p.appendChild(document.createTextNode(" "));
+  });
+
+  const cursor = document.createElement("span");
+  cursor.className = "cursor";
+  p.appendChild(cursor);
+
+  // body text starts after all keywords have landed
+  const start = LAST_FLY_DELAY + FLY_DURATION + PAUSE_AFTER_FLY;
+
+  // the hands appear during the held title screen, just after the words land
+  timers.push(setTimeout(() => ascii.classList.add("on"), LAST_FLY_DELAY + FLY_DURATION + 400));
+
+  bodyWords.forEach((span, i) => {
+    timers.push(setTimeout(() => span.classList.add("on"), start + i * WORD_STEP));
+  });
+
+  const end = start + bodyWords.length * WORD_STEP;
+  timers.push(setTimeout(() => {
+    cursor.classList.add("on");
+    hint.classList.add("on");
+  }, end + 200));
+}
+
+build();
+document.addEventListener("click", build);
+document.addEventListener("keydown", build);
+</script>
+</body>
+</html>
