@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jenny Selegey — Product Designer</title>
+<meta name="description" content="Jenny Selegey — product designer working on personalization, user agency, and the systems that decide who you are.">
+
+<!--
+  ────────────────────────────────────────────────────────────
+  SWAP IN (search "EDIT"):
+  • EDIT-CONTACT → real email + LinkedIn URL
+  • EDIT-IMG     → replace each .panel with a real <img> (clean, no border needed)
+  • EDIT-META    → bracketed values
+  ACCENT: to go pure black & white, set --accent below to #15151A.
+  ────────────────────────────────────────────────────────────
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:    #FCFCFB;
+    --panel:    #F1F1EF;
+    --panel-2:  #E9E9E6;
+    --ink:      #16161A;
+    --ink-mid:  #56565C;
+    --ink-soft: #9A9A9E;
+    --line:     #E7E7E4;
+    --accent:   #1B33E0;   /* single electric accent — set to #15151A for pure B&W */
+
+    --sans:"Manrope", system-ui, -apple-system, sans-serif;
+
+    --t-hero:  clamp(2.3rem, 6vw, 5rem);
+    --t-title: clamp(1.8rem, 4.2vw, 3rem);
+    --t-h3:    clamp(1.15rem, 2vw, 1.5rem);
+    --t-lead:  clamp(1.08rem, 1.5vw, 1.34rem);
+    --t-body:  clamp(1.02rem, 1.15vw, 1.12rem);
+    --t-label: 0.66rem;
+
+    --maxw: 1320px;
+    --measure: 58ch;
+    --gap: clamp(1.6rem, 3.2vw, 3rem);
+    --section-y: clamp(5rem, 11vw, 10rem);
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--sans); font-size:var(--t-body); font-weight:400; line-height:1.72;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; overflow-x:hidden;
+  }
+  ::selection{ background:var(--ink); color:var(--paper); }
+  a{ color:inherit; text-decoration:none; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{ width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:clamp(1.25rem,5vw,4.5rem); }
+  section{ padding-block:var(--section-y); }
+
+  .label{ font-size:var(--t-label); letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; }
+  .lead{ font-size:var(--t-lead); line-height:1.5; max-width:var(--measure); color:var(--ink-mid); font-weight:300; }
+  h1,h2,h3{ font-weight:200; line-height:1.05; letter-spacing:-0.01em; }
+  h3{ font-weight:300; font-size:var(--t-h3); line-height:1.2; letter-spacing:0; }
+
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; }
+
+  /* reveal */
+  .reveal{ opacity:0; transform:translateY(14px); transition:opacity .8s var(--ease), transform .8s var(--ease); }
+  .reveal.in{ opacity:1; transform:none; }
+  .reveal.d1{ transition-delay:.07s; } .reveal.d2{ transition-delay:.14s; } .reveal.d3{ transition-delay:.21s; }
+
+  /* ── top nav ───────────────────────────────────────── */
+  .nav{ position:fixed; inset:0 0 auto 0; z-index:50; display:flex; justify-content:space-between; align-items:center;
+    padding:clamp(.95rem,2vw,1.5rem) clamp(1.25rem,5vw,4.5rem);
+    background:color-mix(in srgb, var(--paper) 78%, transparent); backdrop-filter:blur(14px);
+    border-bottom:1px solid transparent; transition:border-color .4s ease; }
+  .nav.scrolled{ border-bottom-color:var(--line); }
+  .nav .wm{ font-weight:600; font-size:.8rem; letter-spacing:.06em; }
+  .nav .links{ display:flex; gap:clamp(1.1rem,2.4vw,2.4rem); }
+  .nav .links a{ font-size:var(--t-label); letter-spacing:.18em; text-transform:uppercase; color:var(--ink-mid); font-weight:600; }
+  .nav .links a:hover{ color:var(--ink); }
+
+  /* ── right index rail ─────────────────────────────── */
+  .rail{ position:fixed; right:clamp(1rem,2.2vw,1.9rem); top:50%; transform:translateY(-50%); z-index:40; display:flex; flex-direction:column; align-items:flex-end; gap:.65rem; }
+  .rail a{ font-size:.64rem; letter-spacing:.06em; color:var(--ink-soft); font-variant-numeric:tabular-nums; font-weight:500; transition:color .3s; }
+  .rail a:hover{ color:var(--ink); }
+  .rail a.active{ color:var(--accent); }
+
+  /* ── meta row (top of sections) ───────────────────── */
+  .meta-line{ display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding-bottom:clamp(1.4rem,3vw,2rem); }
+
+  /* ── hero ──────────────────────────────────────────── */
+  .hero{ min-height:94svh; display:flex; flex-direction:column; justify-content:center; padding-top:clamp(6rem,13vh,9rem); padding-bottom:clamp(3rem,7vh,5rem); }
+  .hero .meta-line{ border:none; padding-bottom:clamp(1.8rem,4vw,2.8rem); }
+  .hero h1{ font-size:var(--t-hero); max-width:18ch; margin-bottom:clamp(1.4rem,3vw,2.2rem); }
+  .hero h1 em{ font-style:normal; }
+  .hero .lead{ max-width:54ch; }
+  .hero-line{ display:block; overflow:hidden; }
+  .hero-line > span{ display:block; transform:translateY(110%); animation:rise 1s var(--ease) forwards; }
+  .hero-line:nth-child(1) > span{ animation-delay:.12s; }
+  .hero-line:nth-child(2) > span{ animation-delay:.24s; }
+  .hero-line:nth-child(3) > span{ animation-delay:.36s; }
+  @keyframes rise{ to{ transform:translateY(0); } }
+
+  /* ── image panels (clean, frameless) ──────────────── */
+  .panel{ background:var(--panel); position:relative; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.45rem; text-align:center; padding:2rem; aspect-ratio:16/10; width:100%; overflow:hidden; }
+  .panel.tall{ aspect-ratio:9/16; }
+  .panel.wide{ aspect-ratio:16/6.5; }
+  .panel .pl{ font-size:var(--t-label); letter-spacing:.18em; text-transform:uppercase; color:var(--ink-mid); font-weight:600; }
+  .panel .ph{ font-size:.76rem; color:var(--ink-soft); font-weight:300; }
+  /* faint corner ticks — technical feel */
+  .panel::before, .panel::after{ content:""; position:absolute; width:14px; height:14px; opacity:.5; }
+  .panel::before{ top:12px; left:12px; border-top:1px solid var(--ink-soft); border-left:1px solid var(--ink-soft); }
+  .panel::after{ bottom:12px; right:12px; border-bottom:1px solid var(--ink-soft); border-right:1px solid var(--ink-soft); }
+  .cap{ font-size:.72rem; letter-spacing:.04em; color:var(--ink-soft); margin-top:.8rem; font-weight:500; }
+
+  /* media fills a panel cleanly — no padding, no corner ticks */
+  .panel.media{ padding:0; }
+  .panel.media::before, .panel.media::after{ display:none; }
+  .panel.media > img, .panel.media > video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+
+  /* live, clickable Figma prototype embed */
+  .embed{ position:relative; width:100%; aspect-ratio:16/10; border:1px solid var(--line); background:var(--panel); }
+  .embed.tall{ aspect-ratio:9/16; max-width:380px; margin-inline:auto; }
+  .embed > iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+  /* ── project ───────────────────────────────────────── */
+  .proj{ padding-top:clamp(3rem,6vw,6rem); }
+  .proj-head{ display:grid; grid-template-columns:1fr; gap:clamp(1rem,2.4vw,1.6rem); align-items:start; margin-bottom:clamp(2.4rem,5vw,4rem); }
+  .proj-tags{ display:flex; flex-wrap:wrap; gap:.4rem; }
+  .tag{ font-size:var(--t-label); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-mid); border:1px solid var(--line); border-radius:100px; padding:.35rem .8rem; font-weight:500; }
+  .proj-title{ font-size:var(--t-title); max-width:16ch; }
+  .proj-lead{ color:var(--ink-mid); font-weight:300; max-width:50ch; font-size:var(--t-lead); line-height:1.5; }
+
+  /* dotted-leader spec list (the signature) */
+  .specs{ display:grid; gap:.55rem; max-width:480px; margin-top:.4rem; }
+  .spec{ display:grid; grid-template-columns:auto 1fr auto; align-items:end; gap:.7rem; }
+  .spec .k{ font-size:var(--t-label); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; padding-bottom:.12rem; }
+  .spec .fill{ border-bottom:1px dotted var(--ink-soft); height:.7em; opacity:.5; }
+  .spec .v{ font-size:.86rem; color:var(--ink); font-weight:500; font-variant-numeric:tabular-nums; padding-bottom:.02rem; }
+
+  .viewlink{ display:inline-flex; align-items:center; gap:.5rem; margin-top:1.6rem; font-size:var(--t-label); letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  .viewlink .arr{ transition:transform .3s var(--ease); }
+  .viewlink:hover .arr{ transform:translateY(2px); }
+
+  .proj-visual{ display:grid; gap:var(--gap); }
+  .grid-2{ display:grid; grid-template-columns:1fr; gap:var(--gap); }
+  .phones{ display:grid; grid-template-columns:repeat(2,1fr); gap:var(--gap); }
+  .ba{ display:grid; grid-template-columns:1fr; gap:var(--gap); }
+  .ba .balabel{ font-size:var(--t-label); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin-bottom:.7rem; }
+
+  /* ── detail ────────────────────────────────────────── */
+  .detail{ margin-top:clamp(3rem,6vw,5rem); }
+  .pa{ display:grid; grid-template-columns:1fr; gap:var(--gap); border-top:1px solid var(--line); padding-top:clamp(2rem,4vw,3rem); margin-block:clamp(2.4rem,5vw,3.6rem); }
+  .pa .k{ font-size:var(--t-label); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin-bottom:.9rem; }
+  .pa p{ color:var(--ink); font-weight:300; max-width:50ch; }
+
+  .block{ margin-block:clamp(2.6rem,5vw,4rem); }
+  .block .label{ display:block; margin-bottom:.9rem; }
+  .block h3{ margin-bottom:1.1rem; max-width:24ch; }
+  .block p{ color:var(--ink-mid); font-weight:300; max-width:var(--measure); }
+  .block p + p{ margin-top:1rem; }
+  .block .panel{ margin-top:1.6rem; }
+
+  .note{ border-left:1px solid var(--accent); padding:.1rem 0 .1rem 1.1rem; margin-block:clamp(1.4rem,3vw,2rem); color:var(--ink-mid); font-size:.9rem; font-weight:300; max-width:62ch; }
+  .note b{ color:var(--ink); font-weight:600; }
+
+  .reflection{ font-size:var(--t-title); font-weight:200; line-height:1.2; max-width:22ch; color:var(--ink); margin-top:clamp(2.5rem,5vw,4rem); padding-top:clamp(1.6rem,3vw,2.4rem); border-top:1px solid var(--line); }
+
+  .pull{ padding-block:clamp(4rem,8vw,7rem); }
+  .pull p{ font-size:var(--t-title); font-weight:200; line-height:1.2; max-width:20ch; }
+  .pull .by{ font-size:var(--t-label); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin-top:1.4rem; }
+
+  /* ── other work ────────────────────────────────────── */
+  .other-grid{ display:grid; grid-template-columns:1fr; gap:var(--gap); margin-top:clamp(1.8rem,3.5vw,2.8rem); }
+
+  /* ── about ─────────────────────────────────────────── */
+  .about-grid{ display:grid; grid-template-columns:1fr; gap:clamp(2.4rem,5vw,4.5rem); align-items:start; }
+  .about h2{ font-size:var(--t-title); max-width:14ch; margin-block:1.1rem 1.8rem; }
+  .about p{ max-width:var(--measure); color:var(--ink-mid); font-weight:300; }
+  .about p + p{ margin-top:1.1rem; }
+  .facts{ margin-top:2.2rem; display:grid; gap:.55rem; max-width:520px; }
+
+  /* ── contact ───────────────────────────────────────── */
+  .contact h2{ font-size:var(--t-hero); max-width:13ch; margin-block:1.2rem clamp(2rem,4vw,3rem); }
+  .clinks{ display:grid; gap:.7rem; max-width:560px; }
+  .crow{ display:grid; grid-template-columns:auto 1fr auto; align-items:end; gap:.9rem; padding-block:.7rem; border-bottom:1px solid var(--line); transition:border-color .3s; }
+  .crow .k{ font-size:var(--t-label); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; padding-bottom:.2rem; }
+  .crow .fill{ border-bottom:1px dotted var(--ink-soft); height:.7em; opacity:.4; }
+  .crow .v{ font-size:var(--t-h3); font-weight:300; }
+  .crow:hover{ border-bottom-color:var(--accent); }
+  .crow:hover .v{ color:var(--accent); }
+
+  footer{ border-top:1px solid var(--line); }
+  footer .wrap{ padding-block:2.4rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; font-size:var(--t-label); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; }
+
+  /* ── responsive ────────────────────────────────────── */
+  @media (min-width:760px){
+    .grid-2{ grid-template-columns:1fr 1fr; }
+    .ba{ grid-template-columns:1fr 1fr; }
+    .phones{ grid-template-columns:repeat(4,1fr); }
+    .other-grid{ grid-template-columns:repeat(3,1fr); }
+    .about-grid{ grid-template-columns:1.5fr 1fr; }
+    .pa{ grid-template-columns:1fr 1fr; }
+  }
+  @media (min-width:920px){
+    .proj-head{ grid-template-columns:1.1fr .9fr; column-gap:clamp(2rem,5vw,5rem); }
+    .proj-head .specs-wrap{ grid-column:2; grid-row:1 / span 4; align-self:start; }
+  }
+  @media (max-width:980px){ .rail{ display:none; } }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+    .reveal{ opacity:1; transform:none; }
+    .hero-line > span{ transform:none; }
+  }
+</style>
+</head>
+
+<body>
+
+  <nav class="nav" id="nav">
+    <a href="#top" class="wm">Jenny Selegey</a>
+    <div class="links"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></div>
+  </nav>
+
+  <nav class="rail" aria-label="Sections">
+    <a href="#top" data-rail="top" class="active">00</a>
+    <a href="#user-id-model" data-rail="user-id-model">01</a>
+    <a href="#letterboxd" data-rail="letterboxd">02</a>
+    <a href="#other" data-rail="other">03</a>
+    <a href="#about" data-rail="about">04</a>
+    <a href="#contact" data-rail="contact">05</a>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero" id="top" data-rail-section="top">
+    <div class="wrap">
+      <div class="meta-line">
+        <span class="label">Product Designer</span>
+        <span class="label">Tel Aviv — 2026</span>
+      </div>
+      <h1>
+        <span class="hero-line"><span>Designing the interface</span></span>
+        <span class="hero-line"><span>between people and the</span></span>
+        <span class="hero-line"><span>systems that <em>read</em> them.</span></span>
+      </h1>
+      <p class="lead">Working at the edge of personalization, user agency, and the quiet machinery that decides who you are online. Currently finishing an M.Des at Bezalel.</p>
+    </div>
+  </header>
+
+  <!-- WORK -->
+  <section id="work">
+    <div class="wrap">
+      <div class="meta-line reveal" style="border-bottom:1px solid var(--line)">
+        <span class="label">Selected Work</span>
+        <span class="label">Index — 03 Projects</span>
+      </div>
+    </div>
+
+    <!-- 01 -->
+    <div class="wrap proj" id="user-id-model" data-rail-section="user-id-model">
+      <div class="proj-head reveal">
+        <span class="label">Work — 01</span>
+        <div class="specs-wrap">
+          <div class="specs">
+            <div class="spec"><span class="k">Type</span><span class="fill"></span><span class="v">B2C · Dashboard · AI</span></div>
+            <div class="spec"><span class="k">Discipline</span><span class="fill"></span><span class="v">UX · UI · Data Viz · Motion</span></div>
+            <div class="spec"><span class="k">Year</span><span class="fill"></span><span class="v">2025 — 2026</span></div>
+            <div class="spec"><span class="k">Context</span><span class="fill"></span><span class="v">M.Des / Bezalel</span></div>
+            <div class="spec"><span class="k">Tools</span><span class="fill"></span><span class="v">Figma · After Effects</span></div>
+          </div>
+        </div>
+        <h2 class="proj-title">User ID Model</h2>
+        <p class="proj-lead">A cross-platform interface that surfaces the algorithmic model each platform builds of you — and turns personalization into something you can see and steer.</p>
+        <a href="#uim-detail" class="viewlink">View case <span class="arr">↓</span></a>
+      </div>
+
+      <div class="proj-visual reveal">
+        <div class="panel wide"><!-- EDIT-IMG --><span class="pl">User ID Model — key visual</span><span class="ph">Hero screen / main composition</span></div>
+        <div class="grid-2">
+          <div class="panel"><!-- EDIT-IMG --><span class="pl">Distributed User Model</span></div>
+          <div class="panel"><!-- EDIT-IMG --><span class="pl">Your Digital Ecosystem</span></div>
+        </div>
+      </div>
+
+      <div class="detail" id="uim-detail">
+        <div class="pa">
+          <div class="reveal"><div class="k">Problem</div><p>Recommendation systems infer an identity for each user and act on it silently. People feel the effects — eerie ads, narrowing feeds — but have no surface to see, question, or correct the model.</p></div>
+          <div class="reveal d1"><div class="k">Approach</div><p>Treat the user model as a first-class object: give it a face, a structure, and controls. Flow from a single sign-in into a “distributed” view of the self across services — then make it editable.</p></div>
+        </div>
+
+        <div class="block reveal">
+          <span class="label">Step 01</span>
+          <h3>Entry — one identity, many doors</h3>
+          <p>Sign-in uses the providers people already live inside — Google, Apple, Facebook, Microsoft — with a single primary Log In action. From there the interface resolves into a Distributed User Model: the same person, seen through every service at once.</p>
+          <div class="panel"><!-- EDIT-IMG --><span class="pl">Login → Distributed User Model</span><span class="ph">Sign-in / transition · 16:10</span></div>
+          <div class="cap">Fig. 1 — Sign-in resolving into the distributed user model.</div>
+        </div>
+
+        <div class="block reveal">
+          <span class="label">Step 02</span>
+          <h3>Your Digital Ecosystem</h3>
+          <p>A map of the services that hold a piece of you, and what each infers. Every service is labelled and readable without hovering, so the whole picture is graspable before you dive into any node.</p>
+          <div class="panel"><!-- EDIT-IMG --><span class="pl">Ecosystem map</span><span class="ph">Labels visible by default, not on hover · 16:10</span></div>
+          <div class="cap">Fig. 2 — Each node names its service and the data it reads.</div>
+          <div class="note"><b>Reviewer note → fix:</b> persistent service labels (not hover-only), and more than one action per node — <i>view inferences · adjust · disconnect</i> — so “Delete account” isn’t the only move.</div>
+        </div>
+
+        <div class="block reveal">
+          <span class="label">Step 03</span>
+          <h3>Editing the model</h3>
+          <p>Each inferred trait becomes a control. Sliders adjust how strongly a signal feeds personalization; a clearly labelled Reset to default restores the platform’s original guess, so nothing is a one-way door.</p>
+          <div class="panel"><!-- EDIT-IMG --><span class="pl">Editable traits — sliders</span><span class="ph">Explicit “Reset to default”, not an ambiguous arrow · 16:10</span></div>
+          <div class="cap">Fig. 3 — Tuning the signals that shape recommendations.</div>
+          <div class="note"><b>Consistency fix:</b> give steps 01–04 one shared container so the flow reads as a single system, not separate frames.</div>
+        </div>
+
+        <div class="note reveal"><b>On realism:</b> this is <i>critical / speculative design</i>. The multi-provider sign-in and editable model don’t mirror how auth works today — that gap is the argument. Kept intentionally, with the UX made legible enough to read as a real product.</div>
+
+        <p class="reflection reveal">“The system already has a model of you. This one just lets you look back.”</p>
+      </div>
+    </div>
+
+    <div class="wrap pull reveal">
+      <p>Personalization is a portrait drawn behind your back. Design can hand you the mirror.</p>
+      <div class="by">— Working note, M.Des research</div>
+    </div>
+
+    <!-- 02 -->
+    <div class="wrap proj" id="letterboxd" data-rail-section="letterboxd">
+      <div class="proj-head reveal">
+        <span class="label">Work — 02</span>
+        <div class="specs-wrap">
+          <div class="specs">
+            <div class="spec"><span class="k">Type</span><span class="fill"></span><span class="v">Mobile · Navigation · IA</span></div>
+            <div class="spec"><span class="k">Discipline</span><span class="fill"></span><span class="v">Product · UX · UI</span></div>
+            <div class="spec"><span class="k">Year</span><span class="fill"></span><span class="v">2025</span></div>
+            <div class="spec"><span class="k">Platform</span><span class="fill"></span><span class="v">iOS</span></div>
+            <div class="spec"><span class="k">Context</span><span class="fill"></span><span class="v">Self-directed</span></div>
+          </div>
+        </div>
+        <h2 class="proj-title">Letterboxd Redesign</h2>
+        <p class="proj-lead">A social network for logging and reviewing films, rebuilt around clearer navigation and a calmer information architecture — keeping the voice, fixing the structure.</p>
+        <a href="#lbx-detail" class="viewlink">View case <span class="arr">↓</span></a>
+      </div>
+
+      <div class="proj-visual reveal">
+        <div class="panel wide"><!-- EDIT-IMG --><span class="pl">Letterboxd — key visual</span><span class="ph">Hero composition</span></div>
+      </div>
+
+      <div class="detail" id="lbx-detail">
+        <div class="note reveal"><b>Context:</b> Letterboxd is a social network for logging, rating, and reviewing films — loved for its taste and tone. This redesign keeps that personality and rebuilds what gets in the way.</div>
+
+        <div class="pa">
+          <div class="reveal"><div class="k">Problem</div><p>The app had a clear soul and a confusing body. Key actions were buried, navigation competed with itself, and the most-used flow — logging a film — took more steps than it should.</p></div>
+          <div class="reveal d1"><div class="k">Approach</div><p>Audit the information architecture, name the few real problems, and fix them without flattening the voice that makes Letterboxd, Letterboxd. Restraint over reinvention.</p></div>
+        </div>
+
+        <div class="block reveal">
+          <span class="label">Core flow</span>
+          <h3>Log a film — before / after</h3>
+          <p>Before and after for each screen in the logging flow, so the reasoning shows step by step. Larger crops than the original deck — legible without zooming.</p>
+          <div class="ba" style="margin-top:1.6rem">
+            <div><div class="balabel">Before</div><div class="panel tall"><!-- EDIT-IMG --><span class="pl">Log Film — original</span></div></div>
+            <div><div class="balabel">After</div><div class="panel tall"><!-- EDIT-IMG --><span class="pl">Log Film — redesigned</span></div></div>
+          </div>
+          <div class="cap">Repeat one before/after pair per screen in the flow.</div>
+          <div class="note"><b>Reviewer notes → fixes:</b> before/after per screen (done); crops large enough to read without zoom; in the prototype, a small <b>tap marker</b> so viewers know which control advances each screen.</div>
+        </div>
+
+        <div class="block reveal">
+          <span class="label">Highlights</span>
+          <h3>The changes that did the most work</h3>
+          <p>Regrouped navigation, a clearer film-page hierarchy, and a shorter log flow.</p>
+          <div class="phones">
+            <div class="panel tall"><!-- EDIT-IMG --><span class="pl">01</span></div>
+            <div class="panel tall"><!-- EDIT-IMG --><span class="pl">02</span></div>
+            <div class="panel tall"><!-- EDIT-IMG --><span class="pl">03</span></div>
+            <div class="panel tall"><!-- EDIT-IMG --><span class="pl">04</span></div>
+          </div>
+          <div class="note"><b>Polish fix:</b> bring the Highlights’ colour and styling up to the level of the screens — reuse the exact UI palette so the section feels of-a-piece.</div>
+        </div>
+
+        <p class="reflection reveal">“Redesign as restraint: keep the soul, fix the body.”</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 OTHER -->
+  <section id="other" data-rail-section="other">
+    <div class="wrap">
+      <div class="meta-line reveal" style="border-bottom:1px solid var(--line)">
+        <span class="label">Work — 03 · Brand &amp; Visual</span>
+        <span class="label">Showing range</span>
+      </div>
+      <p class="lead reveal" style="margin-top:clamp(1.6rem,3vw,2.4rem)">Identity, editorial, and motion work — the breadth behind the product thinking. <!-- EDIT: swap for real projects --></p>
+      <div class="other-grid">
+        <div class="reveal"><div class="panel"><!-- EDIT-IMG --><span class="pl">Brand 01</span></div><div class="cap">Project name · year · role</div></div>
+        <div class="reveal d1"><div class="panel"><!-- EDIT-IMG --><span class="pl">Brand 02</span></div><div class="cap">Project name · year · role</div></div>
+        <div class="reveal d2"><div class="panel"><!-- EDIT-IMG --><span class="pl">Motion 03</span></div><div class="cap">Project name · year · role</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="about" data-rail-section="about">
+    <div class="wrap">
+      <div class="about-grid">
+        <div class="reveal">
+          <span class="label">About — 04</span>
+          <h2>Jenny Selegey</h2>
+          <p>I’m a product designer finishing an M.Des in Visual Communication at Bezalel. My work sits at a meeting point most people don’t get to see: between the interfaces we use every day and the models those systems quietly build of us.</p>
+          <p>That interest runs through everything I make. I read personalization, recommendation systems, and digital subjectivity through writers like Zuboff, Haraway, and Kay &amp; Kummerfeld — then bring it back down to pixels: real flows, real screens, real decisions about what a person can see and control.</p>
+          <p>Before this I worked across galleries and studios — including Gordon Gallery and Studio Brave — and on web and mobile UX/UI alongside senior designers. I care about work that is precise, a little human, and honest about the systems it lives inside.</p>
+          <div class="facts">
+            <div class="spec"><span class="k">Focus</span><span class="fill"></span><span class="v">Product · UX/UI · Personalization</span></div>
+            <div class="spec"><span class="k">Studying</span><span class="fill"></span><span class="v">M.Des — Bezalel</span></div>
+            <div class="spec"><span class="k">Previously</span><span class="fill"></span><span class="v">Gordon Gallery · Studio Brave</span></div>
+            <div class="spec"><span class="k">Based in</span><span class="fill"></span><span class="v">Tel Aviv · open to relocation</span></div><!-- EDIT-META -->
+          </div>
+        </div>
+        <div class="reveal d1"><div class="panel media" style="aspect-ratio:4/5"><!-- EDIT-IMG --><img src="portrait-meme.png" alt="Jenny Selegey" style="object-position:top"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="contact" data-rail-section="contact">
+    <div class="wrap reveal">
+      <span class="label">Contact — 05</span>
+      <h2>Let’s build something worth being modelled by.</h2>
+      <div class="clinks">
+        <!-- EDIT-CONTACT -->
+        <a class="crow" href="mailto:hello@jennyselegey.com"><span class="k">Email</span><span class="fill"></span><span class="v">hello@jennyselegey.com</span></a>
+        <a class="crow" href="https://www.linkedin.com/in/your-handle" target="_blank" rel="noopener"><span class="k">LinkedIn</span><span class="fill"></span><span class="v">/in/your-handle</span></a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>© <span id="year"></span> Jenny Selegey</span>
+      <span>Product Designer · Tel Aviv</span>
+    </div>
+  </footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', scrollY > 24);
+  onScroll(); addEventListener('scroll', onScroll, { passive:true });
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold:.12, rootMargin:'0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  } else { document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')); }
+
+  const railLinks = [...document.querySelectorAll('.rail a')];
+  const byId = Object.fromEntries(railLinks.map(a=>[a.dataset.rail, a]));
+  const railIO = new IntersectionObserver((es)=>{
+    es.forEach(e=>{ if(e.isIntersecting){ railLinks.forEach(a=>a.classList.remove('active')); const el=byId[e.target.getAttribute('data-rail-section')]; if(el) el.classList.add('active'); } });
+  }, { threshold:.4, rootMargin:'-20% 0px -40% 0px' });
+  document.querySelectorAll('[data-rail-section]').forEach(s=>railIO.observe(s));
+</script>
+</body>
+</html>
